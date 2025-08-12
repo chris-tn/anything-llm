@@ -1,0 +1,120 @@
+replicaCount: 1
+
+nameOverride: ""
+fullnameOverride: ""
+
+image:
+  repository: mintplexlabs/anythingllm
+  tag: render
+  pullPolicy: IfNotPresent
+
+serviceAccount:
+  name: default
+
+podAnnotations:
+  prometheus.io/scrape: "true"
+  prometheus.io/path: /metrics
+  prometheus.io/port: "9090"
+
+podSecurityContext:
+  fsGroup: 1000
+  runAsNonRoot: true
+  runAsUser: 1000
+  runAsGroup: 1000
+
+securityContext:
+  allowPrivilegeEscalation: true
+  runAsNonRoot: true
+  runAsUser: 1000
+  runAsGroup: 1000
+  capabilities:
+    add:
+      - SYS_ADMIN
+
+resources:
+  limits:
+    memory: 4Gi
+    cpu: 1000m
+  requests:
+    memory: 2Gi
+    cpu: 500m
+
+autoscaling:
+  enabled: true
+  minReplicas: 1
+  maxReplicas: 5
+  # Set either CPU and/or memory utilization targets (in %)
+  targetCPUUtilizationPercentage: 70
+  targetMemoryUtilizationPercentage: null
+  # Optional behavior config for HPA v2
+  behavior: {}
+
+env:
+  AWS_REGION: ""
+  SERVER_PORT: 3001
+  STORAGE_DIR: "/storage"
+  NODE_ENV: "production"
+  UID: 1000
+  GID: 1000
+
+secrets:
+  # If name is set, the Deployment will use that Secret. If create is true, a Secret will be created with provided values below.
+  create: true
+  name: ""
+  awsAccessKeyId: ""
+  awsSecretAccessKey: ""
+  jwtSecret: "my-random-string-for-seeding"  # Replace with a secure random string
+
+persistence:
+  enabled: true
+  size: 5Gi
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: "" # use cluster default StorageClass
+  mountPath: "/storage"
+  # If provided, a static PV will be created using this EBS volumeId
+  ebsVolumeId: ""
+  # Node zone affinity for the PV & Pod scheduling (only used when ebsVolumeId is set)
+  zone: "us-east-1c"
+  pvUid: "1000"
+  pvGid: "1000"
+
+nodeAffinity:
+  enabled: false
+  # Which node label to use for zone selection
+  zoneKey: topology.kubernetes.io/zone
+  zones:
+    - us-east-1c
+
+service:
+  type: ClusterIP
+  trafficPort: 3301
+  targetPort: 3001
+  metricsPort: 9090
+
+ingress:
+  enabled: false
+  className: internal-ingress
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: "/"
+    ingress.kubernetes.io/ssl-redirect: "false"
+  host: ""
+  tls:
+    enabled: true
+    secretName: letsencrypt-prod
+
+probes:
+  readiness:
+    enabled: true
+    path: /v1/api/health
+    port: 8888
+    initialDelaySeconds: 15
+    periodSeconds: 5
+    successThreshold: 2
+  liveness:
+    enabled: true
+    path: /v1/api/health
+    port: 8888
+    initialDelaySeconds: 15
+    periodSeconds: 5
+    failureThreshold: 3

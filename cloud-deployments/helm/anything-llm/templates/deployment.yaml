@@ -1,0 +1,142 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "anything-llm.fullname" . }}
+  labels:
+    {{- include "anything-llm.labels" . | nindent 4 }}
+spec:
+  {{- if not .Values.autoscaling.enabled }}
+  replicas: {{ .Values.replicaCount }}
+  {{- end }}
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 0%
+      maxUnavailable: 100%
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ include "anything-llm.name" . }}
+      app.kubernetes.io/instance: {{ .Release.Name }}
+  template:
+    metadata:
+      labels:
+        {{- include "anything-llm.labels" . | nindent 8 }}
+      annotations:
+        {{- toYaml .Values.podAnnotations | nindent 8 }}
+    spec:
+      serviceAccountName: {{ .Values.serviceAccount.name | quote }}
+      terminationGracePeriodSeconds: 10
+      securityContext:
+        fsGroup: {{ .Values.podSecurityContext.fsGroup }}
+        runAsNonRoot: {{ .Values.podSecurityContext.runAsNonRoot }}
+        runAsGroup: {{ .Values.podSecurityContext.runAsGroup }}
+        runAsUser: {{ .Values.podSecurityContext.runAsUser }}
+      {{- if and .Values.nodeAffinity.enabled (gt (len .Values.nodeAffinity.zones) 0) }}
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: {{ .Values.nodeAffinity.zoneKey | quote }}
+                operator: In
+                values:
+                {{- range .Values.nodeAffinity.zones }}
+                - {{ . | quote }}
+                {{- end }}
+      {{- end }}
+      containers:
+        - name: {{ include "anything-llm.name" . }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          securityContext:
+            allowPrivilegeEscalation: {{ .Values.securityContext.allowPrivilegeEscalation }}
+            runAsNonRoot: {{ .Values.securityContext.runAsNonRoot }}
+            runAsGroup: {{ .Values.securityContext.runAsGroup }}
+            runAsUser: {{ .Values.securityContext.runAsUser }}
+            capabilities:
+              add:
+              {{- range .Values.securityContext.capabilities.add }}
+                - {{ . }}
+              {{- end }}
+          command:
+            - /bin/bash
+            - -c
+            - |
+              set -x -e
+              sleep 3
+              echo "AWS_REGION: $AWS_REGION"
+              echo "SERVER_PORT: $SERVER_PORT"
+              echo "NODE_ENV: $NODE_ENV"
+              echo "STORAGE_DIR: $STORAGE_DIR"
+              {
+                cd /app/server/ &&
+                  npx prisma generate --schema=./prisma/schema.prisma &&
+                  npx prisma migrate deploy --schema=./prisma/schema.prisma &&
+                  node /app/server/index.js
+                echo "Server process exited with status $?"
+              } &
+              {
+                node /app/collector/index.js
+                echo "Collector process exited with status $?"
+              } &
+              wait -n
+              exit $?
+          {{- if .Values.probes.readiness.enabled }}
+          readinessProbe:
+            httpGet:
+              path: {{ .Values.probes.readiness.path }}
+              port: {{ .Values.probes.readiness.port }}
+            initialDelaySeconds: {{ .Values.probes.readiness.initialDelaySeconds }}
+            periodSeconds: {{ .Values.probes.readiness.periodSeconds }}
+            successThreshold: {{ .Values.probes.readiness.successThreshold }}
+          {{- end }}
+          {{- if .Values.probes.liveness.enabled }}
+          livenessProbe:
+            httpGet:
+              path: {{ .Values.probes.liveness.path }}
+              port: {{ .Values.probes.liveness.port }}
+            initialDelaySeconds: {{ .Values.probes.liveness.initialDelaySeconds }}
+            periodSeconds: {{ .Values.probes.liveness.periodSeconds }}
+            failureThreshold: {{ .Values.probes.liveness.failureThreshold }}
+          {{- end }}
+          env:
+            {{- if .Values.env.AWS_REGION }}
+            - name: AWS_REGION
+              value: {{ .Values.env.AWS_REGION | quote }}
+            {{- end }}
+            - name: SERVER_PORT
+              value: {{ .Values.env.SERVER_PORT | quote }}
+            - name: STORAGE_DIR
+              value: {{ .Values.env.STORAGE_DIR | quote }}
+            - name: NODE_ENV
+              value: {{ .Values.env.NODE_ENV | quote }}
+            - name: UID
+              value: {{ .Values.env.UID | quote }}
+            - name: GID
+              value: {{ .Values.env.GID | quote }}
+            {{- if or .Values.secrets.awsAccessKeyId .Values.secrets.name }}
+            - name: AWS_ACCESS_KEY_ID
+              valueFrom:
+                secretKeyRef:
+                  name: {{ default (printf "%s-secrets" (include "anything-llm.fullname" .)) .Values.secrets.name }}
+                  key: AWS_ACCESS_KEY_ID
+            - name: AWS_SECRET_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ default (printf "%s-secrets" (include "anything-llm.fullname" .)) .Values.secrets.name }}
+                  key: AWS_SECRET_ACCESS_KEY
+            {{- end }}
+            - name: JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ default (printf "%s-secrets" (include "anything-llm.fullname" .)) .Values.secrets.name }}
+                  key: JWT_SECRET
+          volumeMounts:
+            - name: storage
+              mountPath: {{ .Values.persistence.mountPath | quote }}
+      volumes:
+        - name: storage
+          persistentVolumeClaim:
+            claimName: {{ include "anything-llm.fullname" . }}-storage

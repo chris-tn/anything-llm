@@ -1,0 +1,30 @@
+{{- if and .Values.persistence.enabled .Values.persistence.ebsVolumeId .Values.nodeAffinity.enabled }}
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: {{ include "anything-llm.fullname" . }}-pv
+  annotations:
+    pv.beta.kubernetes.io/uid: {{ .Values.persistence.pvUid | quote }}
+    pv.beta.kubernetes.io/gid: {{ .Values.persistence.pvGid | quote }}
+spec:
+  {{- if .Values.persistence.storageClassName }}
+  storageClassName: {{ .Values.persistence.storageClassName | quote }}
+  {{- end }}
+  capacity:
+    storage: {{ .Values.persistence.size | quote }}
+  accessModes:
+    - ReadWriteOnce
+  awsElasticBlockStore:
+    volumeID: {{ .Values.persistence.ebsVolumeId | quote }}
+    fsType: ext4
+  nodeAffinity:
+    required:
+      nodeSelectorTerms:
+      - matchExpressions:
+        - key: {{ .Values.nodeAffinity.zoneKey | quote }}
+          operator: In
+          values:
+          {{- range .Values.nodeAffinity.zones }}
+          - {{ . | quote }}
+          {{- end }}
+{{- end }}

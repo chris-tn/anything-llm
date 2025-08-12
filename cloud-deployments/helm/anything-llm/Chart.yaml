@@ -1,0 +1,6 @@
+apiVersion: v2
+name: anything-llm
+description: Helm chart to deploy AnythingLLM (server + collector)
+type: application
+version: 0.1.0
+appVersion: "render"
