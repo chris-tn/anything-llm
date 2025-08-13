@@ -49,7 +49,7 @@ export default function Footer() {
     return (
       <div className="flex justify-center mb-2">
         <div className="flex space-x-4">
-          <div className="flex w-fit">
+          {/* <div className="flex w-fit">
             <Link
               to={paths.github()}
               target="_blank"
@@ -99,7 +99,7 @@ export default function Footer() {
                 color="var(--theme-sidebar-footer-icon-fill)"
               />
             </Link>
-          </div>
+          </div> */}
           {!isMobile && <SettingsButton />}
         </div>
         <Tooltip

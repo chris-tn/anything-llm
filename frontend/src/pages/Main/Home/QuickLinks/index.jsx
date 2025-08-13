@@ -5,6 +5,7 @@ import paths from "@/utils/paths";
 import { useManageWorkspaceModal } from "@/components/Modals/ManageWorkspace";
 import ManageWorkspace from "@/components/Modals/ManageWorkspace";
 import { useState } from "react";
+import useUser from "@/hooks/useUser";
 import { useNewWorkspaceModal } from "@/components/Modals/NewWorkspace";
 import NewWorkspaceModal from "@/components/Modals/NewWorkspace";
 import showToast from "@/utils/toast";
@@ -15,6 +16,7 @@ export default function QuickLinks() {
   const navigate = useNavigate();
   const { showModal } = useManageWorkspaceModal();
   const [selectedWorkspace, setSelectedWorkspace] = useState(null);
+  const { user } = useUser();
   const {
     showing: showingNewWsModal,
     showModal: showNewWsModal,
@@ -72,13 +74,15 @@ export default function QuickLinks() {
           <FileArrowDown size={16} />
           {t("main-page.quickLinks.embedDocument")}
         </button>
-        <button
-          onClick={createWorkspace}
-          className="h-[45px] text-sm font-semibold bg-theme-home-button-secondary rounded-lg text-theme-home-button-secondary-text flex items-center justify-center gap-x-2.5 transition-all duration-200 hover:bg-theme-home-button-secondary-hover hover:text-theme-home-button-secondary-hover-text"
-        >
-          <Plus size={16} />
-          {t("main-page.quickLinks.createWorkspace")}
-        </button>
+        {user?.role === "admin" && (
+          <button
+            onClick={createWorkspace}
+            className="h-[45px] text-sm font-semibold bg-theme-home-button-secondary rounded-lg text-theme-home-button-secondary-text flex items-center justify-center gap-x-2.5 transition-all duration-200 hover:bg-theme-home-button-secondary-hover hover:text-theme-home-button-secondary-hover-text"
+          >
+            <Plus size={16} />
+            {t("main-page.quickLinks.createWorkspace")}
+          </button>
+        )}
       </div>
 
       {selectedWorkspace && (

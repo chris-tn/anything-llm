@@ -7,6 +7,7 @@ const { Telemetry } = require("../models/telemetry");
 const { User } = require("../models/user");
 const { DocumentVectors } = require("../models/vectors");
 const { Workspace } = require("../models/workspace");
+const { WorkspaceUser } = require("../models/workspaceUsers");
 const { WorkspaceChats } = require("../models/workspaceChats");
 const {
   getVectorDbClass,
@@ -35,8 +36,22 @@ function adminEndpoints(app) {
   app.get(
     "/admin/users",
     [validatedRequest, strictMultiUserRoleValid([ROLES.admin, ROLES.manager])],
-    async (_request, response) => {
+    async (request, response) => {
       try {
+        const caller = await userFromSession(request, response);
+        if (caller.role === ROLES.manager) {
+          const { Workspace } = require("../models/workspace");
+          const { WorkspaceUser } = require("../models/workspaceUsers");
+          const assigned = await Workspace.whereWithUser(caller);
+          const workspaceIds = assigned.map((w) => Number(w.id));
+          if (workspaceIds.length === 0) return response.status(200).json({ users: [] });
+          const relations = await WorkspaceUser.where({
+            workspace_id: { in: workspaceIds },
+          });
+          const userIds = Array.from(new Set(relations.map((r) => Number(r.user_id))));
+          const users = await User.where({ id: { in: userIds } });
+          return response.status(200).json({ users });
+        }
         const users = await User.where();
         response.status(200).json({ users });
       } catch (e) {
@@ -221,12 +236,22 @@ function adminEndpoints(app) {
     }
   );
 
+  // Admins see all; managers only see assigned workspaces (with user ids populated)
   app.get(
     "/admin/workspaces",
     [validatedRequest, strictMultiUserRoleValid([ROLES.admin, ROLES.manager])],
-    async (_request, response) => {
+    async (request, response) => {
       try {
-        const workspaces = await Workspace.whereWithUsers();
+        const user = await userFromSession(request, response);
+        const baseWorkspaces = await Workspace.whereWithUser(user);
+        // Populate userIds for each so Admin view parity remains
+        const workspaces = [];
+        for (const ws of baseWorkspaces) {
+          const userIds = (
+            await WorkspaceUser.where({ workspace_id: Number(ws.id) })
+          ).map((rel) => rel.user_id);
+          workspaces.push({ ...ws, userIds });
+        }
         response.status(200).json({ workspaces });
       } catch (e) {
         console.error(e);
@@ -250,9 +275,10 @@ function adminEndpoints(app) {
     }
   );
 
+  // Only admins can create workspaces
   app.post(
     "/admin/workspaces/new",
-    [validatedRequest, strictMultiUserRoleValid([ROLES.admin, ROLES.manager])],
+    [validatedRequest, strictMultiUserRoleValid([ROLES.admin])],
     async (request, response) => {
       try {
         const user = await userFromSession(request, response);
@@ -269,12 +295,26 @@ function adminEndpoints(app) {
     }
   );
 
+  // Managers can update members of workspaces they are assigned to; Admins can update any
   app.post(
     "/admin/workspaces/:workspaceId/update-users",
     [validatedRequest, strictMultiUserRoleValid([ROLES.admin, ROLES.manager])],
     async (request, response) => {
       try {
         const { workspaceId } = request.params;
+        const caller = await userFromSession(request, response);
+        if (caller.role === ROLES.manager) {
+          // Ensure manager is assigned to this workspace
+          const relation = await WorkspaceUser.get({
+            user_id: Number(caller.id),
+            workspace_id: Number(workspaceId),
+          });
+          if (!relation)
+            return response
+              .status(401)
+              .json({ success: false, error: "Unauthorized" })
+              .end();
+        }
         const { userIds } = reqBody(request);
         const { success, error } = await Workspace.updateUsers(
           workspaceId,
@@ -288,9 +328,10 @@ function adminEndpoints(app) {
     }
   );
 
+  // Only admins can delete workspaces
   app.delete(
     "/admin/workspaces/:id",
-    [validatedRequest, strictMultiUserRoleValid([ROLES.admin, ROLES.manager])],
+    [validatedRequest, strictMultiUserRoleValid([ROLES.admin])],
     async (request, response) => {
       try {
         const { id } = request.params;

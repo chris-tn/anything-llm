@@ -259,8 +259,8 @@ const Workspace = {
   },
 
   getWithUser: async function (user = null, clause = {}) {
-    if ([ROLES.admin, ROLES.manager].includes(user.role))
-      return this.get(clause);
+    // Admins can access any workspace. Managers and defaults must be assigned.
+    if ([ROLES.admin].includes(user.role)) return this.get(clause);
 
     try {
       const workspace = await prisma.workspaces.findFirst({
@@ -385,7 +385,8 @@ const Workspace = {
     limit = null,
     orderBy = null
   ) {
-    if ([ROLES.admin, ROLES.manager].includes(user.role))
+    // Admins can list all workspaces. Managers and defaults only see assigned.
+    if ([ROLES.admin].includes(user.role))
       return await this.where(clause, limit, orderBy);
 
     try {

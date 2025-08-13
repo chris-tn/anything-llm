@@ -1035,13 +1035,21 @@ function systemEndpoints(app) {
     async (request, response) => {
       try {
         const { offset = 0, limit = 20 } = reqBody(request);
+        const user = response.locals?.user;
+        const clause = {};
+        if (user?.role === ROLES.manager) {
+          const { Workspace } = require("../models/workspace");
+          const workspaces = await Workspace.whereWithUser(user);
+          const ids = workspaces.map((w) => Number(w.id));
+          clause.workspaceId = { in: ids.length === 0 ? [-1] : ids };
+        }
         const chats = await WorkspaceChats.whereWithData(
-          {},
+          clause,
           limit,
           offset * limit,
           { id: "desc" }
         );
-        const totalChats = await WorkspaceChats.count();
+        const totalChats = await WorkspaceChats.count(clause);
         const hasPages = totalChats > (offset + 1) * limit;
 
         response.status(200).json({ chats: chats, hasPages, totalChats });

@@ -97,7 +97,7 @@ export default function DefaultChatContainer() {
           <div>
             <MessageText>{t("welcomeMessage.part4")}</MessageText>
 
-            {(!user || user?.role !== "default") && (
+            {user?.role === "admin" && (
               <button
                 onClick={showNewWsModal}
                 className="mt-5 w-fit transition-all duration-300 border border-slate-200 px-4 py-2 rounded-lg text-white light:border-black/50 light:text-theme-text-primary text-sm items-center flex gap-x-2 hover:bg-slate-200 hover:text-slate-800 focus:ring-gray-800"
@@ -229,7 +229,9 @@ export default function DefaultChatContainer() {
               </React.Fragment>
             );
           })}
-      {showingNewWsModal && <NewWorkspaceModal hideModal={hideNewWsModal} />}
+      {user?.role === "admin" && showingNewWsModal && (
+        <NewWorkspaceModal hideModal={hideNewWsModal} />
+      )}
     </div>
   );
 }

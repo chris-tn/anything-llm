@@ -52,12 +52,9 @@ export default function AddMemberModal({ closeModal, workspace, users }) {
     setSearchTerm(event.target.value);
   };
 
-  const filteredUsers = users
-    .filter((user) =>
-      user.username.toLowerCase().includes(searchTerm.toLowerCase())
-    )
-    .filter((user) => user.role !== "admin")
-    .filter((user) => user.role !== "manager");
+  const filteredUsers = users.filter((user) =>
+    user.username.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   return (
     <div className="relative w-full max-w-[550px] max-h-full">

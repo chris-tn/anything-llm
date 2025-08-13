@@ -10,8 +10,10 @@ import NewWorkspaceModal from "./NewWorkspaceModal";
 import { useModal } from "@/hooks/useModal";
 import ModalWrapper from "@/components/ModalWrapper";
 import CTAButton from "@/components/lib/CTAButton";
+import useUser from "@/hooks/useUser";
 
 export default function AdminWorkspaces() {
+  const { user } = useUser();
   const { isOpen, openModal, closeModal } = useModal();
 
   return (
@@ -33,14 +35,16 @@ export default function AdminWorkspaces() {
               a workspace will delete all of its associated chats and settings.
             </p>
           </div>
-          <div className="w-full justify-end flex">
-            <CTAButton
-              onClick={openModal}
-              className="mt-3 mr-0 mb-4 md:-mb-14 z-10"
-            >
-              <BookOpen className="h-4 w-4" weight="bold" /> New Workspace
-            </CTAButton>
-          </div>
+          {user?.role === "admin" && (
+            <div className="w-full justify-end flex">
+              <CTAButton
+                onClick={openModal}
+                className="mt-3 mr-0 mb-4 md:-mb-14 z-10"
+              >
+                <BookOpen className="h-4 w-4" weight="bold" /> New Workspace
+              </CTAButton>
+            </div>
+          )}
           <div className="overflow-x-auto">
             <WorkspacesContainer />
           </div>

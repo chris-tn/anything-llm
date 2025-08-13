@@ -142,21 +142,23 @@ export default function ActiveWorkspaces() {
                                 </p>
                               </div>
                             </div>
-                            {user?.role !== "default" && (
-                              <div
-                                className={`flex items-center gap-x-[2px] transition-opacity duration-200 ${isActive ? "opacity-100" : "opacity-0 group-hover:opacity-100"}`}
+                            <div
+                              className={`flex items-center gap-x-[2px] transition-opacity duration-200 ${isActive ? "opacity-100" : "opacity-0 group-hover:opacity-100"}`}
+                            >
+                              {/* Allow all roles to open upload modal */}
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  setSelectedWs(workspace);
+                                  showModal();
+                                }}
+                                className="border-none rounded-md flex items-center justify-center ml-auto p-[2px] hover:bg-[#646768] text-[#A7A8A9] hover:text-white"
                               >
-                                <button
-                                  type="button"
-                                  onClick={(e) => {
-                                    e.preventDefault();
-                                    setSelectedWs(workspace);
-                                    showModal();
-                                  }}
-                                  className="border-none rounded-md flex items-center justify-center ml-auto p-[2px] hover:bg-[#646768] text-[#A7A8A9] hover:text-white"
-                                >
-                                  <UploadSimple className="h-[20px] w-[20px]" />
-                                </button>
+                                <UploadSimple className="h-[20px] w-[20px]" />
+                              </button>
+                              {/* Only non-default can access workspace settings */}
+                              {user?.role !== "default" && (
                                 <button
                                   onClick={(e) => {
                                     e.preventDefault();
@@ -182,8 +184,8 @@ export default function ActiveWorkspaces() {
                                     className="h-[20px] w-[20px]"
                                   />
                                 </button>
-                              </div>
-                            )}
+                              )}
+                            </div>
                           </div>
                         </a>
                       </div>

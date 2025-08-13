@@ -187,7 +187,8 @@ export function SidebarMobileHeader() {
 
 function NewWorkspaceButton({ user, showNewWsModal }) {
   const { t } = useTranslation();
-  if (!!user && user?.role === "default") return null;
+  // Only admins can create new workspaces
+  if (!user || user?.role !== "admin") return null;
 
   return (
     <div className="flex gap-x-2 items-center justify-between">

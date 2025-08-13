@@ -94,18 +94,17 @@ const ManageWorkspace = ({ hideModal = noop, providedSlug = null }) => {
             </button>
           </div>
 
-          {user?.role !== "default" && (
-            <ModalTabSwitcher
-              selectedTab={selectedTab}
-              setSelectedTab={setSelectedTab}
-            />
-          )}
+          {/* Always show Documents tab switcher (uploads for all). Other tabs gated in their pages */}
+          <ModalTabSwitcher
+            selectedTab={selectedTab}
+            setSelectedTab={setSelectedTab}
+          />
 
           {selectedTab === "documents" ? (
             <DocumentSettings workspace={workspace} systemSettings={settings} />
-          ) : (
+          ) : user?.role !== "default" ? (
             <DataConnectors workspace={workspace} systemSettings={settings} />
-          )}
+          ) : null}
         </div>
       </div>
     </div>
@@ -149,9 +148,8 @@ export function useManageWorkspaceModal() {
   const [showing, setShowing] = useState(false);
 
   function showModal() {
-    if (user?.role !== "default") {
-      setShowing(true);
-    }
+    // Allow all users to open for uploads
+    setShowing(true);
   }
 
   function hideModal() {

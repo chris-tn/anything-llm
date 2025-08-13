@@ -12,15 +12,12 @@ const availableThemes = {
  */
 export function useTheme() {
   const [theme, _setTheme] = useState(() => {
-    return localStorage.getItem("theme") || "default";
+    return localStorage.getItem("theme") || "light";
   });
 
   useEffect(() => {
     if (localStorage.getItem("theme") !== null) return;
-    if (!window.matchMedia) return;
-    if (window.matchMedia("(prefers-color-scheme: light)").matches)
-      return _setTheme("light");
-    _setTheme("default");
+    _setTheme("light");
   }, []);
 
   useEffect(() => {

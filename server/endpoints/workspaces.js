@@ -43,9 +43,10 @@ function workspaceEndpoints(app) {
   if (!app) return;
   const responseCache = new Map();
 
+  // Only admins can create new workspaces
   app.post(
     "/workspace/new",
-    [validatedRequest, flexUserRoleValid([ROLES.admin, ROLES.manager])],
+    [validatedRequest, flexUserRoleValid([ROLES.admin])],
     async (request, response) => {
       try {
         const user = await userFromSession(request, response);
@@ -82,9 +83,10 @@ function workspaceEndpoints(app) {
     }
   );
 
+  // Only admins can update workspace settings
   app.post(
     "/workspace/:slug/update",
-    [validatedRequest, flexUserRoleValid([ROLES.admin, ROLES.manager])],
+    [validatedRequest, flexUserRoleValid([ROLES.admin])],
     async (request, response) => {
       try {
         const user = await userFromSession(request, response);
@@ -112,13 +114,10 @@ function workspaceEndpoints(app) {
     }
   );
 
+  // Allow all roles (including default) to upload files when assigned to the workspace
   app.post(
     "/workspace/:slug/upload",
-    [
-      validatedRequest,
-      flexUserRoleValid([ROLES.admin, ROLES.manager]),
-      handleFileUpload,
-    ],
+    [validatedRequest, flexUserRoleValid([ROLES.all]), validWorkspaceSlug, handleFileUpload],
     async function (request, response) {
       try {
         const Collector = new CollectorApi();
@@ -162,9 +161,10 @@ function workspaceEndpoints(app) {
     }
   );
 
+  // Allow all roles (including default) to upload link when assigned to the workspace
   app.post(
     "/workspace/:slug/upload-link",
-    [validatedRequest, flexUserRoleValid([ROLES.admin, ROLES.manager])],
+    [validatedRequest, flexUserRoleValid([ROLES.all]), validWorkspaceSlug],
     async (request, response) => {
       try {
         const Collector = new CollectorApi();
@@ -205,9 +205,10 @@ function workspaceEndpoints(app) {
     }
   );
 
+  // Only admins can modify embeddings
   app.post(
     "/workspace/:slug/update-embeddings",
-    [validatedRequest, flexUserRoleValid([ROLES.admin, ROLES.manager])],
+    [validatedRequest, flexUserRoleValid([ROLES.admin])],
     async (request, response) => {
       try {
         const user = await userFromSession(request, response);
@@ -249,9 +250,10 @@ function workspaceEndpoints(app) {
     }
   );
 
+  // Only admins can delete workspaces
   app.delete(
     "/workspace/:slug",
-    [validatedRequest, flexUserRoleValid([ROLES.admin, ROLES.manager])],
+    [validatedRequest, flexUserRoleValid([ROLES.admin])],
     async (request, response) => {
       try {
         const { slug = "" } = request.params;
@@ -292,9 +294,10 @@ function workspaceEndpoints(app) {
     }
   );
 
+  // Only admins can reset vector db for a workspace
   app.delete(
     "/workspace/:slug/reset-vector-db",
-    [validatedRequest, flexUserRoleValid([ROLES.admin, ROLES.manager])],
+    [validatedRequest, flexUserRoleValid([ROLES.admin])],
     async (request, response) => {
       try {
         const { slug = "" } = request.params;
@@ -536,9 +539,10 @@ function workspaceEndpoints(app) {
     }
   );
 
+  // Only admins can set suggested messages
   app.post(
     "/workspace/:slug/suggested-messages",
-    [validatedRequest, flexUserRoleValid([ROLES.admin, ROLES.manager])],
+    [validatedRequest, flexUserRoleValid([ROLES.admin])],
     async (request, response) => {
       try {
         const { messages = [] } = reqBody(request);
@@ -565,13 +569,10 @@ function workspaceEndpoints(app) {
     }
   );
 
+  // Only admins can pin/unpin
   app.post(
     "/workspace/:slug/update-pin",
-    [
-      validatedRequest,
-      flexUserRoleValid([ROLES.admin, ROLES.manager]),
-      validWorkspaceSlug,
-    ],
+    [validatedRequest, flexUserRoleValid([ROLES.admin]), validWorkspaceSlug],
     async (request, response) => {
       try {
         const { docPath, pinStatus = false } = reqBody(request);
@@ -677,13 +678,10 @@ function workspaceEndpoints(app) {
     }
   );
 
+  // Only admins can upload workspace pfp
   app.post(
     "/workspace/:slug/upload-pfp",
-    [
-      validatedRequest,
-      flexUserRoleValid([ROLES.admin, ROLES.manager]),
-      handlePfpUpload,
-    ],
+    [validatedRequest, flexUserRoleValid([ROLES.admin]), handlePfpUpload],
     async function (request, response) {
       try {
         const { slug } = request.params;
@@ -727,9 +725,10 @@ function workspaceEndpoints(app) {
     }
   );
 
+  // Only admins can remove workspace pfp
   app.delete(
     "/workspace/:slug/remove-pfp",
-    [validatedRequest, flexUserRoleValid([ROLES.admin, ROLES.manager])],
+    [validatedRequest, flexUserRoleValid([ROLES.admin])],
     async function (request, response) {
       try {
         const { slug } = request.params;
@@ -872,13 +871,10 @@ function workspaceEndpoints(app) {
   );
 
   /** Handles the uploading and embedding in one-call by uploading via drag-and-drop in chat container. */
+  // Allow all roles to upload (if assigned) and automatically embed; enforce workspace membership via validWorkspaceSlug
   app.post(
     "/workspace/:slug/upload-and-embed",
-    [
-      validatedRequest,
-      flexUserRoleValid([ROLES.admin, ROLES.manager]),
-      handleFileUpload,
-    ],
+    [validatedRequest, flexUserRoleValid([ROLES.all]), validWorkspaceSlug, handleFileUpload],
     async function (request, response) {
       try {
         const { slug = null } = request.params;
@@ -950,13 +946,10 @@ function workspaceEndpoints(app) {
     }
   );
 
+  // Only admins can remove and unembed documents
   app.delete(
     "/workspace/:slug/remove-and-unembed",
-    [
-      validatedRequest,
-      flexUserRoleValid([ROLES.admin, ROLES.manager]),
-      handleFileUpload,
-    ],
+    [validatedRequest, flexUserRoleValid([ROLES.admin]), handleFileUpload],
     async function (request, response) {
       try {
         const { slug = null } = request.params;
@@ -996,13 +989,10 @@ function workspaceEndpoints(app) {
     }
   );
 
+  // Only admins can clear prompt history
   app.delete(
     "/workspace/:slug/prompt-history",
-    [
-      validatedRequest,
-      flexUserRoleValid([ROLES.admin, ROLES.manager]),
-      validWorkspaceSlug,
-    ],
+    [validatedRequest, flexUserRoleValid([ROLES.admin]), validWorkspaceSlug],
     async (_, response) => {
       try {
         response.status(200).json({
@@ -1017,13 +1007,10 @@ function workspaceEndpoints(app) {
     }
   );
 
+  // Only admins can delete specific prompt history entries
   app.delete(
     "/workspace/prompt-history/:id",
-    [
-      validatedRequest,
-      flexUserRoleValid([ROLES.admin, ROLES.manager]),
-      validWorkspaceSlug,
-    ],
+    [validatedRequest, flexUserRoleValid([ROLES.admin]), validWorkspaceSlug],
     async (request, response) => {
       try {
         const { id } = request.params;
