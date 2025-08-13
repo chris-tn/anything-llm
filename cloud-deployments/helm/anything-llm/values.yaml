@@ -39,6 +39,35 @@ resources:
     memory: 2Gi
     cpu: 500m
 
+# Database configuration
+database:
+  # provider can be "sqlite" (default) or "postgresql"
+  provider: sqlite
+  external:
+    enabled: false
+    host: ""
+    port: 5432
+    database: ""
+    user: ""
+    # Provide the password via an existing secret
+    passwordSecretName: ""
+    passwordSecretKey: ""
+    # Optional extra parameters for the connection string, e.g. sslmode=require
+    params: ""
+
+# Embedded PostgreSQL (Bitnami) subchart configuration
+postgresql:
+  enabled: false
+  auth:
+    username: anythingllm
+    database: anythingllm
+    # It's recommended to set a password via --set postgresql.auth.password=... or existingSecret
+    password: ""
+  primary:
+    persistence:
+      enabled: true
+      size: 8Gi
+
 autoscaling:
   enabled: true
   minReplicas: 1

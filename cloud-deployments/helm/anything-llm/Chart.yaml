@@ -4,3 +4,8 @@ description: Helm chart to deploy AnythingLLM (server + collector)
 type: application
 version: 0.1.0
 appVersion: "render"
+dependencies:
+  - name: postgresql
+    repository: https://charts.bitnami.com/bitnami
+    version: ^15.0.0
+    condition: postgresql.enabled

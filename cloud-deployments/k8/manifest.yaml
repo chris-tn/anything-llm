@@ -1,30 +1,4 @@
 ---
-apiVersion: v1                                                                                                                                           
-kind: PersistentVolume                                                                                                                                   
-metadata:                                                                                                                                                
-  name: anything-llm-volume                                                                                                                              
-  annotations:                                                                                                                                           
-    pv.beta.kubernetes.io/uid: "1000"                                                                                                                    
-    pv.beta.kubernetes.io/gid: "1000"                                                                                                                    
-spec:                                                                                                                                                    
-  storageClassName: gp2                                                                                                                                  
-  capacity:                                                                                                                                              
-    storage: 5Gi                                                                                                                                        
-  accessModes:                                                                                                                                           
-    - ReadWriteOnce                                                                                                                                      
-  awsElasticBlockStore:    
-    # This is the volume UUID from AWS EC2 EBS Volumes list.                                                                                                                              
-    volumeID: "{{ anythingllm_awsElasticBlockStore_volumeID }}"                                                                                                                           
-    fsType: ext4
-  nodeAffinity:                                                                                                                                          
-    required:                                                                                                                                            
-      nodeSelectorTerms:                                                                                                                                 
-      - matchExpressions:                                                                                                                                
-        - key: topology.kubernetes.io/zone                                                                                                               
-          operator: In                                                                                                                                   
-          values:                                                                                                                                        
-          - us-east-1c  
----
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
@@ -73,15 +47,7 @@ spec:
         runAsNonRoot: true                                                                                                                                                          
         runAsGroup: 1000
         runAsUser: 1000
-      affinity:                                                                                                                                                                                                                                                                          
-        nodeAffinity:                                                                                                                                                                                                                                                                    
-          requiredDuringSchedulingIgnoredDuringExecution:                                                                                                                                                                                                                                
-            nodeSelectorTerms:                                                                                                                                                                                                                                                           
-            - matchExpressions:                                                                                                                                                                                                                                                          
-              - key: topology.kubernetes.io/zone                                                                                                                                                                                                                                         
-                operator: In                                                                                                                                                                                                                                                             
-                values:                                                                                                                                                                                                                                                                  
-                - us-east-1c  
+      
       containers:
       - name: anything-llm
         resources:
@@ -140,12 +106,6 @@ spec:
           periodSeconds: 5
           failureThreshold: 3
         env:
-          - name: AWS_REGION
-            value: "{{ aws_region }}"
-          - name: AWS_ACCESS_KEY_ID
-            value: "{{ aws_access_id }}"
-          - name: AWS_SECRET_ACCESS_KEY
-            value: "{{ aws_access_secret }}"
           - name: SERVER_PORT
             value: "3001"
           - name: JWT_SECRET
@@ -188,7 +148,7 @@ spec:
           service:
             name: anything-llm-svc
             port: 
-              number: 3001
+              number: 3301
   tls: # < placing a host in the TLS config will indicate a cert should be created
     - hosts:
         - "{{ namespace }}-chat.{{ base_domain }}"

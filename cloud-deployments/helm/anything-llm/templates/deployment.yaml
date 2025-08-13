@@ -31,6 +31,28 @@ spec:
         runAsNonRoot: {{ .Values.podSecurityContext.runAsNonRoot }}
         runAsGroup: {{ .Values.podSecurityContext.runAsGroup }}
         runAsUser: {{ .Values.podSecurityContext.runAsUser }}
+      {{- if eq .Values.database.provider "postgresql" }}
+      initContainers:
+        - name: prisma-schema-postgresql
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          securityContext:
+            allowPrivilegeEscalation: {{ .Values.securityContext.allowPrivilegeEscalation }}
+            runAsNonRoot: {{ .Values.securityContext.runAsNonRoot }}
+            runAsGroup: {{ .Values.securityContext.runAsGroup }}
+            runAsUser: {{ .Values.securityContext.runAsUser }}
+          command:
+            - /bin/bash
+            - -c
+            - |
+              set -euo pipefail
+              cp /app/server/prisma/schema.prisma /work/schema.prisma
+              sed -i 's/provider = "sqlite"/provider = "postgresql"/' /work/schema.prisma
+              sed -i 's@url\s\+=\s\+\"file:\.\./storage/anythingllm\.db\"@url      = env(\"DATABASE_URL\")@' /work/schema.prisma
+          volumeMounts:
+            - name: prisma-schema
+              mountPath: /work
+      {{- end }}
       {{- if and .Values.nodeAffinity.enabled (gt (len .Values.nodeAffinity.zones) 0) }}
       affinity:
         nodeAffinity:
@@ -65,6 +87,13 @@ spec:
             - -c
             - |
               set -x -e
+              {{- if eq .Values.database.provider "postgresql" }}
+              export PGHOST={{- if .Values.postgresql.enabled -}}{{ printf "%s-postgresql" .Release.Name }}{{- else -}}{{ .Values.database.external.host | quote }}{{- end }}
+              export PGPORT={{- if .Values.postgresql.enabled -}}5432{{- else -}}{{ .Values.database.external.port | quote }}{{- end }}
+              export PGDATABASE={{- if .Values.postgresql.enabled -}}{{ .Values.postgresql.auth.database | quote }}{{- else -}}{{ .Values.database.external.database | quote }}{{- end }}
+              export PGUSER={{- if .Values.postgresql.enabled -}}{{ .Values.postgresql.auth.username | quote }}{{- else -}}{{ .Values.database.external.user | quote }}{{- end }}
+              export DATABASE_URL="postgresql://${PGUSER}:${PGPASSWORD}@${PGHOST}:${PGPORT}/${PGDATABASE}{{- if and (not .Values.postgresql.enabled) (.Values.database.external.params) -}}?{{ .Values.database.external.params }}{{- end -}}"
+              {{- end }}
               sleep 3
               echo "AWS_REGION: $AWS_REGION"
               echo "SERVER_PORT: $SERVER_PORT"
@@ -116,6 +145,30 @@ spec:
               value: {{ .Values.env.UID | quote }}
             - name: GID
               value: {{ .Values.env.GID | quote }}
+            {{- if eq .Values.database.provider "postgresql" }}
+            - name: PGHOST
+              value: {{- if .Values.postgresql.enabled -}}{{ printf "%s-postgresql" .Release.Name }}{{- else -}}{{ .Values.database.external.host | quote }}{{- end }}
+            - name: PGPORT
+              value: {{- if .Values.postgresql.enabled -}}"5432"{{- else -}}{{ .Values.database.external.port | quote }}{{- end }}
+            - name: PGDATABASE
+              value: {{- if .Values.postgresql.enabled -}}{{ .Values.postgresql.auth.database | quote }}{{- else -}}{{ .Values.database.external.database | quote }}{{- end }}
+            - name: PGUSER
+              value: {{- if .Values.postgresql.enabled -}}{{ .Values.postgresql.auth.username | quote }}{{- else -}}{{ .Values.database.external.user | quote }}{{- end }}
+            - name: PGPASSWORD
+              valueFrom:
+                secretKeyRef:
+                  {{- if .Values.postgresql.enabled }}
+                  name: {{ printf "%s-postgresql" .Release.Name }}
+                  {{- if eq .Values.postgresql.auth.username "postgres" }}
+                  key: postgres-password
+                  {{- else }}
+                  key: password
+                  {{- end }}
+                  {{- else }}
+                  name: {{ .Values.database.external.passwordSecretName | quote }}
+                  key: {{ .Values.database.external.passwordSecretKey | quote }}
+                  {{- end }}
+            {{- end }}
             {{- if or .Values.secrets.awsAccessKeyId .Values.secrets.name }}
             - name: AWS_ACCESS_KEY_ID
               valueFrom:
@@ -136,7 +189,16 @@ spec:
           volumeMounts:
             - name: storage
               mountPath: {{ .Values.persistence.mountPath | quote }}
+            {{- if eq .Values.database.provider "postgresql" }}
+            - name: prisma-schema
+              mountPath: /app/server/prisma/schema.prisma
+              subPath: schema.prisma
+            {{- end }}
       volumes:
         - name: storage
           persistentVolumeClaim:
             claimName: {{ include "anything-llm.fullname" . }}-storage
+        {{- if eq .Values.database.provider "postgresql" }}
+        - name: prisma-schema
+          emptyDir: {}
+        {{- end }}
