@@ -42,7 +42,7 @@ resources:
 # Database configuration
 database:
   # provider can be "sqlite" (default) or "postgresql"
-  provider: sqlite
+  provider: postgresql
   external:
     enabled: false
     host: ""
@@ -57,17 +57,19 @@ database:
 
 # Embedded PostgreSQL (Bitnami) subchart configuration
 postgresql:
-  enabled: false
+  enabled: true
   auth:
     username: anythingllm
     database: anythingllm
     # It's recommended to set a password via --set postgresql.auth.password=... or existingSecret
-    password: ""
+    password: "anythingllm"
   primary:
     persistence:
       enabled: true
       size: 8Gi
-
+  image:
+    repository: pavlix/bitnami-postgresql-pgvector
+    tag: 17
 autoscaling:
   enabled: true
   minReplicas: 1
