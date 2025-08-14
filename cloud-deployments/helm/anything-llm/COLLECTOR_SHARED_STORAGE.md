@@ -128,13 +128,23 @@ kubectl exec -it <pod-name> -- ls -la /app/collector/hotdir/
 ## Migration from Single Pod
 If upgrading from single pod deployment:
 
-1. Backup existing data
+### ⚠️ IMPORTANT: Backup First!
+1. **Backup database and storage** (see DATABASE_MIGRATION_SAFETY.md)
 2. Update values.yaml with collector persistence
 3. Upgrade helm release
 4. Scale to multiple replicas
 
 ```bash
+# Backup first
+./backup.sh
+
+# Then upgrade
 helm upgrade anything-llm . \
   --set collector.persistence.enabled=true \
   --set replicaCount=2
 ```
+
+### Database Safety
+- The chart now uses `prisma migrate deploy` instead of `prisma db push`
+- This ensures data safety during schema updates
+- See DATABASE_MIGRATION_SAFETY.md for detailed information
