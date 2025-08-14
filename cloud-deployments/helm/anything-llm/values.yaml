@@ -64,6 +64,7 @@ postgresql:
   enabled: true
   auth:
     username: anythingllm
+    postgresPassword: anythingllm
     database: anythingllm
     password: anythingllm
   primary:
