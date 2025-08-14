@@ -102,7 +102,12 @@ spec:
               {
                 cd /app/server/ &&
                   npx prisma generate --schema=./prisma/schema.prisma &&
+                  {{- if eq .Values.database.provider "postgresql" }}
+                  echo "Using Prisma db push for PostgreSQL schema application" &&
+                  npx prisma db push --schema=./prisma/schema.prisma &&
+                  {{- else }}
                   npx prisma migrate deploy --schema=./prisma/schema.prisma &&
+                  {{- end }}
                   node /app/server/index.js
                 echo "Server process exited with status $?"
               } &
