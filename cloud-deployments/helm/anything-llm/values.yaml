@@ -61,8 +61,7 @@ postgresql:
   auth:
     username: anythingllm
     database: anythingllm
-    # It's recommended to set a password via --set postgresql.auth.password=... or existingSecret
-    password: "anythingllm"
+    password: anythingllm
   primary:
     persistence:
       enabled: true
@@ -133,7 +132,6 @@ ingress:
   tls:
     enabled: true
     secretName: letsencrypt-prod
-
 probes:
   readiness:
     enabled: true
