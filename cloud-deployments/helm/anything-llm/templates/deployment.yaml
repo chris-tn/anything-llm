@@ -146,6 +146,8 @@ spec:
               value: {{ .Values.env.STORAGE_DIR | quote }}
             - name: NODE_ENV
               value: {{ .Values.env.NODE_ENV | quote }}
+            - name: COLLECTOR_PORT
+              value: "8888"
             - name: UID
               value: {{ .Values.env.UID | quote }}
             - name: GID
@@ -194,6 +196,14 @@ spec:
           volumeMounts:
             - name: storage
               mountPath: {{ .Values.persistence.mountPath | quote }}
+            {{- if .Values.collector.persistence.enabled }}
+            - name: collector-storage
+              mountPath: /app/collector/hotdir
+              subPath: hotdir
+            - name: collector-storage
+              mountPath: /app/collector/outputs
+              subPath: outputs
+            {{- end }}
             {{- if eq .Values.database.provider "postgresql" }}
             - name: prisma-schema
               mountPath: /app/server/prisma/schema.prisma
@@ -203,6 +213,11 @@ spec:
         - name: storage
           persistentVolumeClaim:
             claimName: {{ include "anything-llm.fullname" . }}-storage
+        {{- if .Values.collector.persistence.enabled }}
+        - name: collector-storage
+          persistentVolumeClaim:
+            claimName: {{ include "anything-llm.fullname" . }}-collector-storage
+        {{- end }}
         {{- if eq .Values.database.provider "postgresql" }}
         - name: prisma-schema
           emptyDir: {}

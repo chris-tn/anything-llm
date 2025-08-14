@@ -87,7 +87,7 @@ autoscaling:
 env:
   AWS_REGION: ""
   SERVER_PORT: 3001
-  STORAGE_DIR: "/storage"
+  STORAGE_DIR: "/app/server/storage"
   NODE_ENV: "production"
   UID: 1000
   GID: 1000
@@ -104,15 +104,30 @@ persistence:
   enabled: true
   size: 5Gi
   accessModes:
-    - ReadWriteOnce
-  storageClassName: "" # use cluster default StorageClass
-  mountPath: "/storage"
+    - ReadWriteMany
+  storageClassName: "csi-cephfs-sc" # use cluster default StorageClass
+  mountPath: "/app/server/storage"
   # If provided, a static PV will be created using this EBS volumeId
   ebsVolumeId: ""
   # Node zone affinity for the PV & Pod scheduling (only used when ebsVolumeId is set)
   zone: "us-east-1c"
   pvUid: "1000"
   pvGid: "1000"
+
+# Collector persistence configuration for shared storage between pods
+collector:
+  persistence:
+    enabled: true
+    size: 2Gi
+    accessModes:
+      - ReadWriteMany
+    storageClassName: "csi-cephfs-sc" # use cluster default StorageClass
+    # If provided, a static PV will be created using this EBS volumeId
+    ebsVolumeId: ""
+    # Node zone affinity for the PV & Pod scheduling (only used when ebsVolumeId is set)
+    zone: "us-east-1c"
+    pvUid: "1000"
+    pvGid: "1000"
 
 nodeAffinity:
   enabled: false

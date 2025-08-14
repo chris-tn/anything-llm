@@ -1,0 +1,17 @@
+{{- if .Values.collector.persistence.enabled }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "anything-llm.fullname" . }}-collector-storage
+  labels:
+    {{- include "anything-llm.labels" . | nindent 4 }}
+spec:
+  accessModes:
+    {{- toYaml .Values.collector.persistence.accessModes | nindent 4 }}
+  {{- if .Values.collector.persistence.storageClassName }}
+  storageClassName: {{ .Values.collector.persistence.storageClassName | quote }}
+  {{- end }}
+  resources:
+    requests:
+      storage: {{ .Values.collector.persistence.size | quote }}
+{{- end }}
