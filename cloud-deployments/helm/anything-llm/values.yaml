@@ -8,6 +8,10 @@ image:
   tag: render
   pullPolicy: IfNotPresent
 
+global:
+  security:
+    allowInsecureImages: true
+
 serviceAccount:
   name: default
 
@@ -68,7 +72,7 @@ postgresql:
       size: 8Gi
   image:
     repository: pavlix/bitnami-postgresql-pgvector
-    tag: 17
+    tag: "17"
 autoscaling:
   enabled: true
   minReplicas: 1
