@@ -92,6 +92,15 @@ env:
   UID: 1000
   GID: 1000
 
+# Extra environment variables for additional configuration
+# Example for LiteLLM:
+# extraEnvs:
+#   LLM_PROVIDER: "litellm"
+#   LITE_LLM_MODEL_PREF: "gpt-3.5-turbo"
+#   LITE_LLM_MODEL_TOKEN_LIMIT: "4096"
+#   LITE_LLM_BASE_PATH: "http://127.0.0.1:4000"
+extraEnvs: {}
+
 secrets:
   # If name is set, the Deployment will use that Secret. If create is true, a Secret will be created with provided values below.
   create: true
@@ -99,6 +108,12 @@ secrets:
   awsAccessKeyId: ""
   awsSecretAccessKey: ""
   jwtSecret: "my-random-string-for-seeding"  # Replace with a secure random string
+
+# Extra secret values for additional configuration
+# Example for LiteLLM API key:
+# extraSecrets:
+#   LITE_LLM_API_KEY: "sk-123abc"
+extraSecrets: {}
 
 persistence:
   enabled: true

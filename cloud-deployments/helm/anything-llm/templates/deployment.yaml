@@ -193,6 +193,21 @@ spec:
                 secretKeyRef:
                   name: {{ default (printf "%s-secrets" (include "anything-llm.fullname" .)) .Values.secrets.name }}
                   key: JWT_SECRET
+            {{- if .Values.extraEnvs }}
+            {{- range $key, $value := .Values.extraEnvs }}
+            - name: {{ $key | quote }}
+              value: {{ $value | quote }}
+            {{- end }}
+            {{- end }}
+            {{- if .Values.extraSecrets }}
+            {{- range $key, $value := .Values.extraSecrets }}
+            - name: {{ $key | quote }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ default (printf "%s-secrets" (include "anything-llm.fullname" $)) $.Values.secrets.name }}
+                  key: {{ $key | quote }}
+            {{- end }}
+            {{- end }}
           volumeMounts:
             - name: storage
               mountPath: {{ .Values.persistence.mountPath | quote }}

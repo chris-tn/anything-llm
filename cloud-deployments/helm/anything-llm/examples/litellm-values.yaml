@@ -1,0 +1,95 @@
+# Example values.yaml for LiteLLM configuration
+# Usage: helm install anything-llm . -f examples/litellm-values.yaml
+
+replicaCount: 2
+
+image:
+  repository: mintplexlabs/anythingllm
+  tag: render
+  pullPolicy: IfNotPresent
+
+# Database configuration
+database:
+  provider: postgresql
+
+postgresql:
+  enabled: true
+  auth:
+    username: anythingllm
+    postgresPassword: anythingllm
+    database: anythingllm
+    password: anythingllm
+  primary:
+    persistence:
+      enabled: true
+      size: 8Gi
+
+# Core environment variables
+env:
+  AWS_REGION: ""
+  SERVER_PORT: 3001
+  STORAGE_DIR: "/app/server/storage"
+  NODE_ENV: "production"
+  UID: 1000
+  GID: 1000
+
+# LiteLLM Configuration using extraEnvs
+extraEnvs:
+  LLM_PROVIDER: "litellm"
+  LITE_LLM_MODEL_PREF: "gpt-3.5-turbo"
+  LITE_LLM_MODEL_TOKEN_LIMIT: "4096"
+  LITE_LLM_BASE_PATH: "http://litellm-server:4000"
+
+# LiteLLM API Key using extraSecrets
+extraSecrets:
+  LITE_LLM_API_KEY: "sk-your-actual-api-key-here"
+
+# Core secrets
+secrets:
+  create: true
+  name: ""
+  awsAccessKeyId: ""
+  awsSecretAccessKey: ""
+  jwtSecret: "my-random-string-for-seeding"
+
+# Storage configuration
+persistence:
+  enabled: true
+  size: 5Gi
+  accessModes:
+    - ReadWriteMany
+  storageClassName: "efs-sc"
+  mountPath: "/app/server/storage"
+
+# Collector persistence
+collector:
+  persistence:
+    enabled: true
+    size: 2Gi
+    accessModes:
+      - ReadWriteMany
+    storageClassName: "efs-sc"
+
+# Service configuration
+service:
+  type: ClusterIP
+  trafficPort: 3301
+  targetPort: 3001
+  metricsPort: 9090
+
+# Health checks
+probes:
+  readiness:
+    enabled: true
+    path: /v1/api/health
+    port: 8888
+    initialDelaySeconds: 15
+    periodSeconds: 5
+    successThreshold: 2
+  liveness:
+    enabled: true
+    path: /v1/api/health
+    port: 8888
+    initialDelaySeconds: 15
+    periodSeconds: 5
+    failureThreshold: 3
