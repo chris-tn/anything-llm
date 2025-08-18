@@ -52,50 +52,6 @@ spec:
           volumeMounts:
             - name: prisma-schema
               mountPath: /work
-        - name: fix-permissions
-          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
-          imagePullPolicy: {{ .Values.image.pullPolicy }}
-          securityContext:
-            runAsUser: 0
-            runAsGroup: 0
-          command:
-            - /bin/bash
-            - -c
-            - |
-              echo "🔧 Fixing permissions with root privileges..."
-              chown -R 1000:1000 /app/server/node_modules
-              chmod -R 755 /app/server/node_modules
-              if [ -d "/app/server/node_modules/.prisma" ]; then
-                chown -R 1000:1000 /app/server/node_modules/.prisma
-                chmod -R 755 /app/server/node_modules/.prisma
-              fi
-              echo "✅ Permissions fixed!"
-          volumeMounts:
-            - name: storage
-              mountPath: {{ .Values.persistence.mountPath | quote }}
-      {{- else }}
-      initContainers:
-        - name: fix-permissions
-          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
-          imagePullPolicy: {{ .Values.image.pullPolicy }}
-          securityContext:
-            runAsUser: 0
-            runAsGroup: 0
-          command:
-            - /bin/bash
-            - -c
-            - |
-              echo "🔧 Fixing permissions with root privileges..."
-              chown -R 1000:1000 /app/server/node_modules
-              chmod -R 755 /app/server/node_modules
-              if [ -d "/app/server/node_modules/.prisma" ]; then
-                chown -R 1000:1000 /app/server/node_modules/.prisma
-                chmod -R 755 /app/server/node_modules/.prisma
-              fi
-              echo "✅ Permissions fixed!"
-          volumeMounts:
-            - name: storage
-              mountPath: {{ .Values.persistence.mountPath | quote }}
       {{- end }}
       {{- if and .Values.nodeAffinity.enabled (gt (len .Values.nodeAffinity.zones) 0) }}
       affinity:
