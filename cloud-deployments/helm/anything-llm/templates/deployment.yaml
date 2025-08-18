@@ -99,6 +99,23 @@ spec:
               echo "SERVER_PORT: $SERVER_PORT"
               echo "NODE_ENV: $NODE_ENV"
               echo "STORAGE_DIR: $STORAGE_DIR"
+              
+              # Fix Prisma permissions for Kubernetes
+              echo "🔧 Fixing Prisma permissions for Kubernetes..."
+              if [ -d "/app/server/node_modules" ]; then
+                echo "📁 Fixing node_modules permissions..."
+                chmod -R 755 /app/server/node_modules
+              fi
+              if [ -d "/app/server/node_modules/.prisma" ]; then
+                echo "📁 Fixing .prisma directory permissions..."
+                chmod -R 755 /app/server/node_modules/.prisma
+              fi
+              if [ -f "/app/server/node_modules/.prisma/client/index.js" ]; then
+                echo "🗑️ Removing old Prisma client..."
+                rm -rf /app/server/node_modules/.prisma/client
+              fi
+              echo "✅ Permissions fixed!"
+              
               {
                 cd /app/server/ &&
                   npx prisma generate --schema=./prisma/schema.prisma &&
