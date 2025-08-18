@@ -52,6 +52,50 @@ spec:
           volumeMounts:
             - name: prisma-schema
               mountPath: /work
+        - name: fix-permissions
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          securityContext:
+            runAsUser: 0
+            runAsGroup: 0
+          command:
+            - /bin/bash
+            - -c
+            - |
+              echo "🔧 Fixing permissions with root privileges..."
+              chown -R 1000:1000 /app/server/node_modules
+              chmod -R 755 /app/server/node_modules
+              if [ -d "/app/server/node_modules/.prisma" ]; then
+                chown -R 1000:1000 /app/server/node_modules/.prisma
+                chmod -R 755 /app/server/node_modules/.prisma
+              fi
+              echo "✅ Permissions fixed!"
+          volumeMounts:
+            - name: storage
+              mountPath: {{ .Values.persistence.mountPath | quote }}
+      {{- else }}
+      initContainers:
+        - name: fix-permissions
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          securityContext:
+            runAsUser: 0
+            runAsGroup: 0
+          command:
+            - /bin/bash
+            - -c
+            - |
+              echo "🔧 Fixing permissions with root privileges..."
+              chown -R 1000:1000 /app/server/node_modules
+              chmod -R 755 /app/server/node_modules
+              if [ -d "/app/server/node_modules/.prisma" ]; then
+                chown -R 1000:1000 /app/server/node_modules/.prisma
+                chmod -R 755 /app/server/node_modules/.prisma
+              fi
+              echo "✅ Permissions fixed!"
+          volumeMounts:
+            - name: storage
+              mountPath: {{ .Values.persistence.mountPath | quote }}
       {{- end }}
       {{- if and .Values.nodeAffinity.enabled (gt (len .Values.nodeAffinity.zones) 0) }}
       affinity:
@@ -100,25 +144,8 @@ spec:
               echo "NODE_ENV: $NODE_ENV"
               echo "STORAGE_DIR: $STORAGE_DIR"
               
-              # Fix Prisma permissions for Kubernetes
-              echo "🔧 Fixing Prisma permissions for Kubernetes..."
-              if [ -d "/app/server/node_modules" ]; then
-                echo "📁 Fixing node_modules permissions..."
-                chmod -R 755 /app/server/node_modules
-              fi
-              if [ -d "/app/server/node_modules/.prisma" ]; then
-                echo "📁 Fixing .prisma directory permissions..."
-                chmod -R 755 /app/server/node_modules/.prisma
-              fi
-              if [ -f "/app/server/node_modules/.prisma/client/index.js" ]; then
-                echo "🗑️ Removing old Prisma client..."
-                rm -rf /app/server/node_modules/.prisma/client
-              fi
-              echo "✅ Permissions fixed!"
-              
               {
                 cd /app/server/ &&
-                  npx prisma generate --schema=./prisma/schema.prisma &&
                   {{- if eq .Values.database.provider "postgresql" }}
                   echo "Using Prisma db push for PostgreSQL schema application (migrations are SQLite-based)" &&
                   npx prisma db push --schema=./prisma/schema.prisma --accept-data-loss=false &&
